@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "neverbe-18307"
-  }
+  },
+  "targets": {
+    "neverbe-18307": {
+      "hosting": {
+        "neverbe-pos": [
+          "neverbe-pos"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
