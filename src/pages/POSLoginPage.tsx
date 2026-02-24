@@ -35,9 +35,9 @@ export default function POSLoginPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center flex-col items-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 border border-green-200 shadow-sm">
-            <IconShieldLock size={32} className="text-green-600" />
-          </div>
+          <figure className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 border border-green-200 shadow-sm">
+            <img src="/logo.png" alt="Logo" className="w-28 h-28" />
+          </figure>
           <h2 className="text-center text-3xl font-extrabold text-gray-900 tracking-tight">
             POS Terminal Login
           </h2>
