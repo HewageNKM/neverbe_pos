@@ -28,6 +28,10 @@ export const POSAuthProvider = ({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // Tentative login: Set user immediately and stop loading to speed up UI transition
+        setCurrentUser(user);
+        setIsLoading(false);
+
         try {
           const token = await user.getIdToken();
           const response = await api.post(
@@ -41,7 +45,7 @@ export const POSAuthProvider = ({
           );
 
           if (response.status === 200 && response.data) {
-            // Save the structured user details from our backend
+            // Update with enriched user details from our backend
             setCurrentUser(response.data as User);
           } else {
             console.error("Backend login rejected the user.");
@@ -63,14 +67,11 @@ export const POSAuthProvider = ({
             toast.error(
               "Unauthorized: Invalid credentials or lacking POS permissions.",
             );
-          } else {
-            toast.error("Authentication failed. Please log in again.");
+            await auth.signOut();
+            setCurrentUser(null);
           }
-
-          await auth.signOut();
-          setCurrentUser(null);
-        } finally {
-          setIsLoading(false);
+          // If it's a network error or other, we keep the Firebase user for now
+          // and let other components handle failed API calls gracefully.
         }
       } else {
         setCurrentUser(null);

@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import { POSProvider } from "@/context/POSContext";
 import { POSAuthProvider, usePOSAuth } from "@/context/POSAuthContext";
 import POSContent from "@/components/POSContent";
@@ -5,6 +6,12 @@ import POSLoginPage from "./POSLoginPage";
 
 function POSRouteWrapper() {
   const { currentUser } = usePOSAuth();
+
+  useEffect(() => {
+    if (currentUser) {
+      document.title = "POS";
+    }
+  }, [currentUser]);
 
   if (!currentUser) {
     return <POSLoginPage />;
