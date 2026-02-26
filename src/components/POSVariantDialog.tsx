@@ -36,6 +36,22 @@ export default function POSVariantDialog({
   const roundedPrice = Math.round(priceAfterPercent / 10) * 10;
   const autoDiscountPerUnit = basePrice - roundedPrice;
 
+  // Helper to format variant name
+  const formatVariantName = (variant: any) => {
+    if (!variant) return "Default";
+    const name = variant.name || variant.variantName || variant.color;
+    if (!name || name === "Default") return "Standard";
+
+    // Capitalize first letter of each word
+    return name
+      .split(" ")
+      .map(
+        (word: string) =>
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+      )
+      .join(" ");
+  };
+
   useEffect(() => {
     if (open && product && selectedStockId) {
       fetchInventory();
@@ -50,6 +66,11 @@ export default function POSVariantDialog({
       setDiscount(0);
     }
   }, [open, product]);
+
+  // Clear size when variant changes
+  useEffect(() => {
+    setSelectedSize("");
+  }, [selectedVariant]);
 
   const fetchInventory = async () => {
     if (!product || !selectedStockId) return;
@@ -68,12 +89,32 @@ export default function POSVariantDialog({
   };
 
   const getVariantSizes = () => {
-    if (!selectedVariant || !inventory.length) return [];
+    if (!selectedVariant) return [];
+
+    const targetVariantId = selectedVariant.id || selectedVariant.variantId;
+
+    // Use predefined sizes from the variant payload if available
+    const variantSizes = Array.isArray(selectedVariant.sizes)
+      ? selectedVariant.sizes
+      : [];
+
+    if (variantSizes.length > 0) {
+      return variantSizes.map((sizeOption) => {
+        const invMatch = inventory.find(
+          (inv) => inv.variantId === targetVariantId && inv.size === sizeOption,
+        );
+        return {
+          size: sizeOption,
+          stock: invMatch ? invMatch.quantity : 0,
+        };
+      });
+    }
+
+    // Fallback: Use sizes directly from inventory if variant lacks a sizes array
+    if (!inventory.length) return [];
+
     return inventory
-      .filter(
-        (inv) =>
-          inv.variantId === (selectedVariant.id || selectedVariant.variantId),
-      )
+      .filter((inv) => inv.variantId === targetVariantId)
       .map((inv) => ({
         size: inv.size,
         stock: inv.quantity,
@@ -114,9 +155,8 @@ export default function POSVariantDialog({
         itemId: product.id,
         variantId: selectedVariant.id || selectedVariant.variantId,
         name: product.name,
-        variantName:
-          selectedVariant.variantName || selectedVariant.color || "Default",
-        thumbnail: selectedVariant.images[0].url || product.thumbnail || "",
+        variantName: formatVariantName(selectedVariant),
+        thumbnail: selectedVariant.images?.[0]?.url || product.thumbnail || "",
         size: selectedSize,
         discount:
           (autoDiscountPerUnit + parseFloat(discount.toString() || "0")) *
@@ -222,7 +262,7 @@ export default function POSVariantDialog({
                           <p
                             className={`text-sm font-bold leading-tight ${isSelected ? "text-green-800" : "text-gray-700"}`}
                           >
-                            {variant.variantName || variant.color || "Default"}
+                            {formatVariantName(variant)}
                           </p>
                           {(variant.discount > 0 || product.discount > 0) && (
                             <span className="inline-block mt-1 text-[10px] font-bold bg-green-100 text-green-700 px-1.5 rounded-md">
