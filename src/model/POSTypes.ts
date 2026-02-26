@@ -79,10 +79,13 @@ export interface POSStock {
 
 export interface POSVariant {
   id: string;
-  name: string;
+  name?: string;
+  variantName?: string;
+  variantId?: string;
   color?: string;
   thumbnail?: string;
   images?: string[];
+  sizes?: string[];
 }
 
 export interface POSProduct {
