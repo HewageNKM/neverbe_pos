@@ -24,7 +24,7 @@ interface ExchangeItem {
   size: string;
   quantity: number;
   price: number;
-  discount?: number;
+  discount: number;
   maxQuantity?: number;
 }
 
