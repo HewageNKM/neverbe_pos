@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/firebase/firebaseClient";
-import { Button, Input, Card } from "antd";
+import { Button, Input, Card, Divider } from "antd";
 import { IconMail, IconLock } from "@tabler/icons-react";
+import { FcGoogle } from "react-icons/fc";
 import toast from "react-hot-toast";
 
 export default function POSLoginPage() {
@@ -29,6 +30,22 @@ export default function POSLoginPage() {
       console.error("Login Error:", error);
       toast.error(
         error.message || "Failed to login. Please check credentials.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      toast.success("Authenticating with Google...");
+    } catch (error: any) {
+      console.error("Google Login Error:", error);
+      toast.error(
+        error.message || "Failed to login with Google.",
       );
     } finally {
       setLoading(false);
@@ -103,6 +120,21 @@ export default function POSLoginPage() {
               </Button>
             </div>
           </form>
+
+          <Divider className="my-6">
+            <span className="text-zinc-400 text-[10px] font-bold uppercase tracking-[0.2em]">
+              Or Continue With
+            </span>
+          </Divider>
+
+          <Button
+            className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 transition-all font-medium text-base text-zinc-600 bg-white"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+          >
+            <FcGoogle size={24} />
+            <span>Google Account</span>
+          </Button>
         </Card>
 
         <p className="text-center mt-10 text-zinc-400 text-sm font-medium tracking-wide">
