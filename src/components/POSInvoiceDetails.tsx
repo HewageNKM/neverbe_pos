@@ -1,6 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Button, Spin } from "antd";
-import { IconTrash, IconReceipt } from "@tabler/icons-react";
+import { IconTrash, IconReceipt, IconLoader2 } from "@tabler/icons-react";
 import { usePOS } from "../context/POSContext";
 import toast from "react-hot-toast";
 
@@ -13,6 +13,9 @@ export default function POSInvoiceDetails() {
     openPaymentDialog,
   } = usePOS();
 
+  // Track in-flight removal requests to prevent double-clicks
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+
   // Calculate totals
   const { subtotal, totalDiscount, grandTotal } = useMemo(() => {
     const subtotal = items.reduce(
@@ -24,12 +27,24 @@ export default function POSInvoiceDetails() {
     return { subtotal, totalDiscount, grandTotal };
   }, [items]);
 
-  const handleRemoveItem = async (item: any) => {
+  const handleRemoveItem = async (item: any, index: number) => {
+    const itemKey = `${item.itemId}-${item.variantId}-${item.size}-${index}`;
+    
+    // Prevent double removal if already in progress
+    if (removingIds.has(itemKey)) return;
+
+    setRemovingIds((prev) => new Set(prev).add(itemKey));
     try {
       await removeItemFromCart(item);
       toast.success("Item removed");
     } catch (error: any) {
       toast.error(error.message || "Failed to remove item");
+    } finally {
+      setRemovingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(itemKey);
+        return next;
+      });
     }
   };
 
@@ -112,10 +127,19 @@ export default function POSInvoiceDetails() {
                   )}
                 </div>
                 <button
-                  onClick={() => handleRemoveItem(item)}
-                  className="self-center text-gray-400 hover:text-red-500 transition-all p-2.5 hover:bg-red-50 rounded-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 shrink-0"
+                  onClick={() => handleRemoveItem(item, index)}
+                  disabled={removingIds.has(`${item.itemId}-${item.variantId}-${item.size}-${index}`)}
+                  className={`self-center transition-all p-2.5 rounded-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 shrink-0 ${
+                    removingIds.has(`${item.itemId}-${item.variantId}-${item.size}-${index}`)
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-gray-400 hover:text-red-500 hover:bg-red-50"
+                  }`}
                 >
-                  <IconTrash size={22} />
+                  {removingIds.has(`${item.itemId}-${item.variantId}-${item.size}-${index}`) ? (
+                    <IconLoader2 size={22} className="animate-spin" />
+                  ) : (
+                    <IconTrash size={22} />
+                  )}
                 </button>
               </div>
             ))}

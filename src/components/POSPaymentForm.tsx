@@ -229,7 +229,10 @@ export default function POSPaymentForm() {
         transactionFeeCharge: Math.round(transactionFeeCharge * 100) / 100,
       };
 
-      const { data } = await api.post("/api/v1/pos/orders", order);
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(order));
+
+      const { data } = await api.post("/api/v1/pos/orders", formData);
 
       if (data.order) {
         toast.success("Order created successfully!");

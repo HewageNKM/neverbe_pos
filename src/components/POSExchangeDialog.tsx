@@ -264,14 +264,20 @@ export default function POSExchangeDialog({
 
     setProcessing(true);
     try {
-      const { data } = await api.post("/api/v1/pos/exchange", {
-        originalOrderId: orderData?.orderId,
-        stockId: selectedStockId,
-        returnedItems,
-        replacementItems,
-        notes,
-        paymentMethod: priceDifference > 0 ? paymentMethod : undefined,
-      });
+      const formData = new FormData();
+      formData.append(
+        "data",
+        JSON.stringify({
+          originalOrderId: orderData?.orderId,
+          stockId: selectedStockId,
+          returnedItems,
+          replacementItems,
+          notes,
+          paymentMethod: priceDifference > 0 ? paymentMethod : undefined,
+        }),
+      );
+
+      const { data } = await api.post("/api/v1/pos/exchange", formData);
 
       if (data.success) setSuccess(true);
       else setError(data.message || "Exchange failed");
