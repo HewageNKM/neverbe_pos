@@ -57,16 +57,16 @@ export default function POSInvoiceDetails() {
   };
 
   return (
-    <div className="flex-1 flex flex-col rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 overflow-hidden bg-white mt-2 lg:mt-0">
+    <div className="flex-1 flex flex-col rounded-xl lg:rounded-3xl shadow-sm border border-gray-100 overflow-hidden bg-white mt-1 lg:mt-0">
       {/* Header */}
-      <div className="p-4 lg:p-5 bg-green-600 text-white flex justify-between items-center rounded-t-2xl lg:rounded-t-3xl">
-        <div className="flex items-center gap-3">
-          <IconReceipt size={26} />
-          <h2 className="text-lg lg:text-xl font-extrabold uppercase tracking-widest">
+      <div className="p-3 lg:p-5 bg-green-600 text-white flex justify-between items-center rounded-t-xl lg:rounded-t-3xl">
+        <div className="flex items-center gap-2 lg:gap-3">
+          <IconReceipt size={22} className="lg:w-[26px] lg:h-[26px]" />
+          <h2 className="text-base lg:text-xl font-extrabold uppercase tracking-widest leading-tight">
             Current Order
           </h2>
         </div>
-        <span className="bg-white/20 text-white px-3 py-1.5 rounded-xl font-bold font-mono text-sm backdrop-blur-md border border-white/10">
+        <span className="bg-white/20 text-white px-2 py-1 lg:px-3 lg:py-1.5 rounded-lg lg:rounded-xl font-bold font-mono text-[10px] lg:text-sm backdrop-blur-md border border-white/10 shrink-0">
           #{invoiceId || "------"}
         </span>
       </div>

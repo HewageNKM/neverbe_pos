@@ -34,7 +34,7 @@ export default function POSProducts() {
 
   return (
     <>
-      <div className="flex-1 overflow-auto bg-gray-50 p-4 lg:p-6 border-t border-gray-100 rounded-2xl lg:rounded-3xl shadow-inner mt-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 p-2 sm:p-4 lg:p-6 border-t border-gray-100 rounded-xl lg:rounded-3xl shadow-inner lg:mt-2">
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-5">
           {products.map((product: any) => (
             <div
