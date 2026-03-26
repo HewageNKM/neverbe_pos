@@ -12,21 +12,23 @@ export default function POSContent() {
   const { isProductsLoading } = usePOS();
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-screen w-full p-4 lg:p-6 bg-gray-50 overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-4 min-h-screen lg:h-screen w-full p-4 lg:p-6 bg-gray-50 lg:overflow-hidden">
       {/* Left Panel - Products */}
-      <div className="flex-1 flex flex-col gap-2 min-h-[50vh] lg:min-h-0">
+      <div className="flex-[1.5] flex flex-col gap-2 h-auto lg:h-full transition-all duration-300">
         <POSHero />
         {isProductsLoading ? (
-          <div className="flex justify-center items-center flex-1">
+          <div className="flex justify-center items-center flex-1 min-h-[400px]">
             <Spin size="large" />
           </div>
         ) : (
-          <POSProducts />
+          <div className="flex-1 min-h-[500px] lg:min-h-0">
+            <POSProducts />
+          </div>
         )}
       </div>
 
       {/* Right Panel - Invoice Details */}
-      <div className="flex-1 flex flex-col min-h-[50vh] lg:min-h-0">
+      <div className="flex-1 flex flex-col h-auto lg:h-full transition-all duration-300">
         <POSInvoiceDetails />
       </div>
 
