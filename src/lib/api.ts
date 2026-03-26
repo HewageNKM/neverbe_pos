@@ -7,12 +7,9 @@ const API_BASE_URL = import.meta.env.PROD
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
-// Request interceptor — auto-inject Firebase auth token
+// Request interceptor — auto-inject Firebase auth token & set Content-Type
 api.interceptors.request.use(
   async (config) => {
     const user = auth.currentUser;
@@ -20,6 +17,16 @@ api.interceptors.request.use(
       const token = await user.getIdToken();
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Let the browser set the correct Content-Type for FormData (multipart/form-data with boundary)
+    const isFormData = config.data instanceof FormData || (config.data && typeof config.data.append === 'function');
+    if (!isFormData) {
+      config.headers["Content-Type"] = "application/json";
+    } else {
+      // Ensure Content-Type is NOT set for FormData so the browser/axios sets it with boundary
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error) => Promise.reject(error),

@@ -196,7 +196,9 @@ export const POSProvider = ({ children }: { children: ReactNode }) => {
   const addItemToCart = useCallback(
     async (item: POSCartItem) => {
       try {
-        await api.post("/api/v1/pos/cart", item);
+        const formData = new FormData();
+        formData.append("data", JSON.stringify(item));
+        await api.post("/api/v1/pos/cart", formData);
         loadCart();
       } catch (error) {
         console.error("Add Item Error:", error);
@@ -209,7 +211,9 @@ export const POSProvider = ({ children }: { children: ReactNode }) => {
   const removeItemFromCart = useCallback(
     async (item: POSCartItem) => {
       try {
-        await api.delete("/api/v1/pos/cart", { data: item });
+        const formData = new FormData();
+        formData.append("data", JSON.stringify(item));
+        await api.delete("/api/v1/pos/cart", { data: formData });
         loadCart();
       } catch (error) {
         console.error("Remove Item Error:", error);
