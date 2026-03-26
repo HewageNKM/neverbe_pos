@@ -19,8 +19,12 @@ api.interceptors.request.use(
     }
 
     // Let the browser set the correct Content-Type for FormData (multipart/form-data with boundary)
-    if (!(config.data instanceof FormData)) {
+    const isFormData = config.data instanceof FormData || (config.data && typeof config.data.append === 'function');
+    if (!isFormData) {
       config.headers["Content-Type"] = "application/json";
+    } else {
+      // Ensure Content-Type is NOT set for FormData so the browser/axios sets it with boundary
+      delete config.headers["Content-Type"];
     }
 
     return config;

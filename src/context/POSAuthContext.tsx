@@ -34,9 +34,12 @@ export const POSAuthProvider = ({
 
         try {
           const token = await user.getIdToken();
+          const formData = new FormData();
+          formData.append("data", JSON.stringify({ uid: user.uid }));
+
           const response = await api.post(
             "/api/v1/auth/login",
-            { uid: user.uid },
+            formData,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
