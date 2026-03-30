@@ -13,6 +13,7 @@ import {
   Typography,
   Row,
   Col,
+  DatePicker,
 } from "antd";
 import {
   IconX,
@@ -20,10 +21,12 @@ import {
   IconFileUpload,
   IconCash,
   IconReceipt,
+  IconCalendar,
 } from "@tabler/icons-react";
 import api from "@/lib/api";
 import { usePOS } from "../context/POSContext";
 import toast from "react-hot-toast";
+import dayjs from "dayjs";
 
 const { Text } = Typography;
 const labelClass = "block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider";
@@ -88,7 +91,7 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
       const pettyCashData = {
         ...values,
         stockId: selectedStockId,
-        date: new Date().toISOString(),
+        date: values.date ? values.date.toISOString() : dayjs().toISOString(),
       };
 
       formData.append("data", JSON.stringify(pettyCashData));
@@ -187,14 +190,14 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
       }
       className="[&_.ant-modal-content]:!rounded-3xl [&_.ant-modal-header]:!mb-6 [&_.ant-modal-header]:!border-b [&_.ant-modal-header]:!pb-4"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Form Section (Action Sidebar style) */}
-        <div className="lg:col-span-1 space-y-6">
+      <div className="flex flex-col gap-8">
+        {/* Form Section (Top) */}
+        <div className="w-full space-y-6">
           <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
             <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-5 border-b border-gray-100 pb-2 flex items-center gap-2">
               <IconPlus size={14} /> New Expense
             </h3>
-            <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false} initialValues={{ type: "expense", paymentMethod: "cash" }}>
+            <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false} initialValues={{ type: "expense", paymentMethod: "cash", date: dayjs() }}>
               <Row gutter={12}>
                 <Col span={12}>
                   <Form.Item name="type" label={<span className={labelClass}>Type</span>} rules={[{ required: true }]}>
@@ -215,15 +218,31 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
                 </Col>
               </Row>
 
-              <Form.Item name="category" label={<span className={labelClass}>Category</span>} rules={[{ required: true, message: "Required" }]}>
-                <Select placeholder="Select Category" className="h-11 rounded-xl w-full" size="large">
-                  {categories.map((cat) => (
-                    <Select.Option key={cat.id} value={cat.label}>
-                      {cat.label}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item name="date" label={<span className={labelClass}>Transaction Date</span>} rules={[{ required: true, message: "Required" }]}>
+                    <DatePicker 
+                      className="h-11 rounded-xl w-full" 
+                      size="large" 
+                      format="YYYY-MM-DD"
+                      disabledDate={(current) => {
+                        return current && (current.month() !== dayjs().month() || current.year() !== dayjs().year());
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="category" label={<span className={labelClass}>Category</span>} rules={[{ required: true, message: "Required" }]}>
+                    <Select placeholder="Select Category" className="h-11 rounded-xl w-full" size="large">
+                      {categories.map((cat) => (
+                        <Select.Option key={cat.id} value={cat.label}>
+                          {cat.label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
 
               <Form.Item name="amount" label={<span className={labelClass}>Amount (Rs.)</span>} rules={[{ required: true, message: "Required" }]}>
                 <InputNumber className="w-full h-11 rounded-xl flex items-center" min={1} size="large" />
@@ -261,16 +280,14 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
           </div>
 
           <div className="p-4 bg-green-50 border border-green-100 rounded-2xl text-[10px] text-green-800 font-bold leading-relaxed shadow-sm">
-            <div className="flex items-center gap-2 mb-1">
-              <IconCash size={14} />
-              <span>Petty Cash Note</span>
-            </div>
-            Recent transactions will update the monthly petty cash reports. Ensure all receipts are attached for verification.
+            Note: Recent transactions update monthly reports. Ensure receipts are attached.
           </div>
         </div>
 
-        {/* List Section (Main Content style) */}
-        <div className="lg:col-span-3 space-y-4">
+        <Divider className="m-0 border-gray-100" />
+
+        {/* List Section (Bottom) */}
+        <div className="w-full space-y-4">
           <div className="flex items-center justify-between px-2">
             <h3 className="text-sm font-black uppercase tracking-[0.1em] text-gray-800 flex items-center gap-2">
               <IconReceipt size={18} className="text-gray-400" />
