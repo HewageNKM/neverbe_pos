@@ -7,11 +7,13 @@ import {
   IconRefresh,
   IconArrowsExchange,
   IconLogout,
+  IconCash,
 } from "@tabler/icons-react";
 import { usePOS } from "../context/POSContext";
 import POSInvoiceDialog from "./POSInvoiceDialog";
 import POSSettingsDialog from "./POSSettingsDialog";
 import POSExchangeDialog from "./POSExchangeDialog";
+import POSPettyCashDialog from "./POSPettyCashDialog";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebaseClient";
 import toast from "react-hot-toast";
@@ -31,6 +33,7 @@ export default function POSHero() {
   const [showInvoicesForm, setShowInvoicesForm] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showExchangeDialog, setShowExchangeDialog] = useState(false);
+  const [showPettyCashDialog, setShowPettyCashDialog] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +101,14 @@ export default function POSHero() {
                 <IconReceipt size={22} />
               </button>
             </Tooltip>
+            <Tooltip title="Petty Cash">
+              <button
+                onClick={() => setShowPettyCashDialog(true)}
+                className="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-50 hover:bg-green-50 text-gray-600 hover:text-green-600 border border-gray-200 transition-all shadow-sm hover:shadow-md"
+              >
+                <IconCash size={22} />
+              </button>
+            </Tooltip>
             <Tooltip title="Settings">
               <button
                 onClick={() => setShowSettingsDialog(true)}
@@ -162,6 +173,10 @@ export default function POSHero() {
       <POSExchangeDialog
         open={showExchangeDialog}
         onClose={() => setShowExchangeDialog(false)}
+      />
+      <POSPettyCashDialog
+        open={showPettyCashDialog}
+        onClose={() => setShowPettyCashDialog(false)}
       />
     </>
   );
