@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Space, Badge, Typography, Spin, Tooltip } from "antd";
-import { IconBrain, IconTargetArrow, IconAlertTriangle } from "@tabler/icons-react";
+import { Space, Badge, Typography, Spin, Tooltip, Tag } from "antd";
+import { IconBrain, IconTargetArrow, IconAlertTriangle, IconMapPin } from "@tabler/icons-react";
 import api from "@/lib/api";
+import { usePOS } from "../context/POSContext";
 
 const { Text } = Typography;
 
 const NeuralPOSAssistant: React.FC = () => {
+  const { selectedStockId, stocks } = usePOS();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+
+  const currentStock = stocks?.find?.((s: any) => s.id === selectedStockId);
 
   const fetchNeural = async () => {
     try {
@@ -51,9 +55,16 @@ const NeuralPOSAssistant: React.FC = () => {
              <IconBrain size={18} />
            </div>
            <div className="flex flex-col">
-              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400/50 leading-none mb-1">Neural Sales Pulse</span>
+              <div className="flex items-center gap-2 leading-none mb-1">
+                 <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400/50">Neural Sales Pulse</span>
+                 {currentStock && (
+                   <Tag color="emerald" className="m-0 border-none font-black text-[7px] px-1.5 py-0 rounded-full flex items-center gap-1 bg-emerald-500/10 text-emerald-400">
+                      <IconMapPin size={7} /> {currentStock.label || currentStock.name}
+                   </Tag>
+                 )}
+              </div>
               <div className="flex items-center gap-2">
-                 <span className="text-white text-xs font-black tracking-tight">{data.healthScore}% HEALTH</span>
+                 <span className="text-white text-xs font-black tracking-tight uppercase tracking-tighter">{data.healthScore}% Business Health</span>
                  <Badge status={data.healthScore > 70 ? 'success' : 'warning'} />
               </div>
            </div>
