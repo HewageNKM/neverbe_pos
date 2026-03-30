@@ -1,14 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Input, Button, Table, Tag, Form, InputNumber, Select, Upload, Divider } from "antd";
+import {
+  Modal,
+  Input,
+  Button,
+  Table,
+  Tag,
+  Form,
+  InputNumber,
+  Select,
+  Upload,
+  Divider,
+  Typography,
+  Row,
+  Col,
+} from "antd";
 import {
   IconX,
   IconPlus,
   IconFileUpload,
   IconCash,
+  IconReceipt,
 } from "@tabler/icons-react";
 import api from "@/lib/api";
 import { usePOS } from "../context/POSContext";
 import toast from "react-hot-toast";
+
+const { Text } = Typography;
+const labelClass = "block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider";
 
 interface POSPettyCashDialogProps {
   open: boolean;
@@ -18,6 +36,7 @@ interface POSPettyCashDialogProps {
 export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialogProps) {
   const { selectedStockId } = usePOS();
   const [form] = Form.useForm();
+  const typeValue = Form.useWatch("type", form);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -25,14 +44,19 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
 
   useEffect(() => {
     if (open) {
-      fetchCategories();
       fetchExpenses();
     }
   }, [open, selectedStockId]);
 
-  const fetchCategories = async () => {
+  useEffect(() => {
+    if (open && typeValue) {
+      fetchCategories(typeValue);
+    }
+  }, [open, typeValue]);
+
+  const fetchCategories = async (type: "expense" | "income" = "expense") => {
     try {
-      const { data } = await api.get("/api/v1/pos/petty-cash/categories");
+      const { data } = await api.get(`/api/v1/pos/petty-cash/categories?type=${type}`);
       setCategories(data);
     } catch (error) {
       console.error("Failed to fetch categories:", error);
@@ -65,7 +89,6 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
         ...values,
         stockId: selectedStockId,
         date: new Date().toISOString(),
-        type: "expense",
       };
 
       formData.append("data", JSON.stringify(pettyCashData));
@@ -91,32 +114,52 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
 
   const columns = [
     {
-      title: "Date",
-      dataIndex: "date",
-      key: "date",
-      render: (date: string) => new Date(date).toLocaleDateString(),
-    },
-    {
-      title: "Category",
-      dataIndex: "category",
-      key: "category",
+      title: "Transaction Details",
+      key: "details",
+      render: (_: any, record: any) => (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <Tag color={record.type === "expense" ? "red" : "green"} className="text-[10px] font-black px-1.5 py-0 border-none rounded uppercase">
+              {record.type}
+            </Tag>
+            <Text className="font-bold text-gray-900 leading-tight">
+              {record.note || "No details provided"}
+            </Text>
+          </div>
+          <Text className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+            {record.category} • {record.paymentMethod?.toUpperCase() || "CASH"} • {new Date(record.date).toLocaleDateString()}
+          </Text>
+        </div>
+      ),
     },
     {
       title: "Amount",
       dataIndex: "amount",
       key: "amount",
       align: "right" as const,
-      render: (amount: number) => `Rs. ${amount.toLocaleString()}`,
+      render: (amount: number) => (
+        <Text className="font-black text-gray-900 tracking-tight">
+          Rs. {amount.toLocaleString()}
+        </Text>
+      ),
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (status: string) => (
-        <Tag color={status === "APPROVED" ? "green" : status === "REJECTED" ? "red" : "orange"}>
-          {status}
-        </Tag>
-      ),
+      align: "center" as const,
+      render: (status: string) => {
+        const color =
+          status === "APPROVED" ? "green" : status === "REJECTED" ? "red" : "orange";
+        return (
+          <Tag
+            color={color}
+            className="rounded-full px-3 py-0.5 border-none font-black text-[10px] uppercase tracking-widest shadow-sm"
+          >
+            {status}
+          </Tag>
+        );
+      },
     },
   ];
 
@@ -124,83 +167,139 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
     <Modal
       open={open}
       onCancel={onClose}
-      width={900}
+      width={1000}
       footer={null}
-      closeIcon={null}
-      className="[&_.ant-modal-content]:!rounded-2xl"
+      centered
+      title={
+        <div className="flex items-center gap-3 py-2">
+          <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+            <IconCash size={24} className="text-green-600" />
+          </div>
+          <div className="flex flex-col">
+            <Text className="text-lg font-black tracking-tight text-gray-900 leading-none">
+              Petty Cash Management
+            </Text>
+            <Text type="secondary" className="text-[10px] uppercase font-bold tracking-[0.1em] mt-1">
+              Monthly Transactions & Expenses
+            </Text>
+          </div>
+        </div>
+      }
+      className="[&_.ant-modal-content]:!rounded-3xl [&_.ant-modal-header]:!mb-6 [&_.ant-modal-header]:!border-b [&_.ant-modal-header]:!pb-4"
     >
-      <div className="flex justify-between items-center p-5 border-b bg-gray-50/50 rounded-t-2xl">
-        <div className="flex items-center gap-2">
-          <IconCash size={24} className="text-green-600" />
-          <h2 className="text-xl font-bold text-gray-800">Petty Cash (Current Month)</h2>
-        </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all">
-          <IconX size={20} className="text-gray-400" />
-        </button>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Form Section (Action Sidebar style) */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-5 border-b border-gray-100 pb-2 flex items-center gap-2">
+              <IconPlus size={14} /> New Expense
+            </h3>
+            <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false} initialValues={{ type: "expense", paymentMethod: "cash" }}>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item name="type" label={<span className={labelClass}>Type</span>} rules={[{ required: true }]}>
+                    <Select className="h-11 rounded-xl w-full" size="large">
+                      <Select.Option value="expense">EXPENSE</Select.Option>
+                      <Select.Option value="income">INCOME</Select.Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="paymentMethod" label={<span className={labelClass}>Method</span>} rules={[{ required: true }]}>
+                    <Select className="h-11 rounded-xl w-full" size="large">
+                      <Select.Option value="cash">CASH</Select.Option>
+                      <Select.Option value="card">CARD</Select.Option>
+                      <Select.Option value="transfer">TRANSFER</Select.Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
 
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Form Section */}
-        <div className="lg:col-span-1">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700">Add New Expense</h3>
-          <Form form={form} layout="vertical" onFinish={handleFinish}>
-            <Form.Item name="category" label="Category" rules={[{ required: true, message: "Required" }]}>
-              <Select placeholder="Select Category" className="h-11 rounded-xl">
-                {categories.map((cat) => (
-                  <Select.Option key={cat.id} value={cat.label}>
-                    {cat.label}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
+              <Form.Item name="category" label={<span className={labelClass}>Category</span>} rules={[{ required: true, message: "Required" }]}>
+                <Select placeholder="Select Category" className="h-11 rounded-xl w-full" size="large">
+                  {categories.map((cat) => (
+                    <Select.Option key={cat.id} value={cat.label}>
+                      {cat.label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
 
-            <Form.Item name="amount" label="Amount (Rs.)" rules={[{ required: true, message: "Required" }]}>
-              <InputNumber className="w-full h-11 rounded-xl flex items-center" min={1} />
-            </Form.Item>
+              <Form.Item name="amount" label={<span className={labelClass}>Amount (Rs.)</span>} rules={[{ required: true, message: "Required" }]}>
+                <InputNumber className="w-full h-11 rounded-xl flex items-center" min={1} size="large" />
+              </Form.Item>
 
-            <Form.Item name="note" label="Note" rules={[{ required: true, message: "Required" }]}>
-              <Input.TextArea rows={3} className="rounded-xl" placeholder="Purpose of expense" />
-            </Form.Item>
+              <Form.Item name="note" label={<span className={labelClass}>Note / Purpose</span>} rules={[{ required: true, message: "Required" }]}>
+                <Input.TextArea rows={3} className="rounded-xl border-gray-200 focus:border-green-500" placeholder="Purpose of expense" size="large" />
+              </Form.Item>
 
-            <Form.Item label="Attachment">
-              <Upload
-                beforeUpload={() => false}
-                fileList={fileList}
-                onChange={({ fileList }) => setFileList(fileList.slice(-1))}
-                maxCount={1}
-              >
-                <Button icon={<IconFileUpload size={18} />} className="w-full h-11 rounded-xl">
-                  Select File
+              <Form.Item label={<span className={labelClass}>Attachment</span>}>
+                <Upload
+                  beforeUpload={() => false}
+                  fileList={fileList}
+                  onChange={({ fileList }) => setFileList(fileList.slice(-1))}
+                  maxCount={1}
+                >
+                  <Button icon={<IconFileUpload size={18} />} className="w-full h-11 rounded-xl border-dashed border-gray-300 hover:border-green-500 hover:text-green-600 transition-all">
+                    Select Receipt
+                  </Button>
+                </Upload>
+              </Form.Item>
+
+              <Form.Item className="mb-0 mt-6">
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  className="w-full h-12 bg-black hover:bg-gray-800 border-none rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-black/10 transition-all hover:scale-[1.02]"
+                  icon={<IconPlus size={20} />}
+                >
+                  Save Transaction
                 </Button>
-              </Upload>
-            </Form.Item>
+              </Form.Item>
+            </Form>
+          </div>
 
-            <Form.Item className="mb-0">
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                className="w-full h-12 bg-green-600 hover:bg-green-700 rounded-xl font-bold"
-                icon={<IconPlus size={20} />}
-              >
-                Add Transaction
-              </Button>
-            </Form.Item>
-          </Form>
+          <div className="p-4 bg-green-50 border border-green-100 rounded-2xl text-[10px] text-green-800 font-bold leading-relaxed shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <IconCash size={14} />
+              <span>Petty Cash Note</span>
+            </div>
+            Recent transactions will update the monthly petty cash reports. Ensure all receipts are attached for verification.
+          </div>
         </div>
 
-        {/* List Section */}
-        <div className="lg:col-span-2 border-l pl-0 lg:pl-8">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700">Monthly Transactions</h3>
-          <Table
-            dataSource={expenses}
-            columns={columns}
-            rowKey="id"
-            loading={loading}
-            pagination={{ pageSize: 5 }}
-            size="middle"
-            className="border rounded-xl overflow-hidden shadow-sm"
-          />
+        {/* List Section (Main Content style) */}
+        <div className="lg:col-span-3 space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-sm font-black uppercase tracking-[0.1em] text-gray-800 flex items-center gap-2">
+              <IconReceipt size={18} className="text-gray-400" />
+              Transaction History
+            </h3>
+            <Tag color="green" className="rounded-full px-3 py-0.5 border-none font-bold text-[10px]">
+              {expenses.length} Total
+            </Tag>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+            <Table
+              dataSource={expenses}
+              columns={columns}
+              rowKey="id"
+              loading={loading}
+              pagination={{ pageSize: 8, showSizeChanger: false, position: ["bottomRight"] }}
+              size="middle"
+              className="pos-table"
+              locale={{
+                emptyText: (
+                  <div className="py-12 flex flex-col items-center justify-center text-gray-300">
+                    <IconReceipt size={48} stroke={1} />
+                    <p className="mt-2 text-sm font-bold uppercase tracking-widest">No Transactions Found</p>
+                  </div>
+                )
+              }}
+            />
+          </div>
         </div>
       </div>
     </Modal>
