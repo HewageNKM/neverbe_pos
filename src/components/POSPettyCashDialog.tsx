@@ -29,7 +29,7 @@ import toast from "react-hot-toast";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
-const labelClass = "block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider";
+
 
 interface POSPettyCashDialogProps {
   open: boolean;
@@ -44,6 +44,8 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
   const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [fileList, setFileList] = useState<any[]>([]);
+
+  const paymentMethodValue = Form.useWatch("paymentMethod", form);
 
   useEffect(() => {
     if (open) {
@@ -79,6 +81,7 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
     }
   };
 
+
   const handleFinish = async (values: any) => {
     if (!selectedStockId) {
       toast.error("Please select a stock location first");
@@ -88,16 +91,11 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
     setLoading(true);
     try {
       const formData = new FormData();
-      const pettyCashData = {
+      const pettyCashData: any = {
         ...values,
         stockId: selectedStockId,
         date: values.date ? values.date.toISOString() : dayjs().toISOString(),
       };
-
-      formData.append("data", JSON.stringify(pettyCashData));
-      if (fileList.length > 0 && fileList[0].originFileObj) {
-        formData.append("attachment", fileList[0].originFileObj);
-      }
 
       await api.post("/api/v1/pos/petty-cash", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -198,31 +196,11 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
               <IconPlus size={14} /> New Expense
             </h3>
             <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false} initialValues={{ type: "expense", paymentMethod: "cash", date: dayjs() }}>
-              <Row gutter={12}>
+              <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item name="type" label={<span className={labelClass}>Type</span>} rules={[{ required: true }]}>
-                    <Select className="h-11 rounded-xl w-full" size="large">
-                      <Select.Option value="expense">EXPENSE</Select.Option>
-                      <Select.Option value="income">INCOME</Select.Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item name="paymentMethod" label={<span className={labelClass}>Method</span>} rules={[{ required: true }]}>
-                    <Select className="h-11 rounded-xl w-full" size="large">
-                      <Select.Option value="cash">CASH</Select.Option>
-                      <Select.Option value="card">CARD</Select.Option>
-                      <Select.Option value="transfer">TRANSFER</Select.Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={12}>
-                <Col span={12}>
-                  <Form.Item name="date" label={<span className={labelClass}>Transaction Date</span>} rules={[{ required: true, message: "Required" }]}>
+                  <Form.Item name="date" label="Date" rules={[{ required: true, message: "Required" }]}>
                     <DatePicker 
-                      className="h-11 rounded-xl w-full" 
+                      className="w-full" 
                       size="large" 
                       format="YYYY-MM-DD"
                       disabledDate={(current) => {
@@ -232,27 +210,50 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="category" label={<span className={labelClass}>Category</span>} rules={[{ required: true, message: "Required" }]}>
-                    <Select placeholder="Select Category" className="h-11 rounded-xl w-full" size="large">
-                      {categories.map((cat) => (
-                        <Select.Option key={cat.id} value={cat.label}>
-                          {cat.label}
-                        </Select.Option>
-                      ))}
+                  <Form.Item name="type" label="Type" rules={[{ required: true }]}>
+                    <Select size="large">
+                      <Select.Option value="expense">EXPENSE</Select.Option>
+                      <Select.Option value="income">INCOME</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Form.Item name="amount" label={<span className={labelClass}>Amount (Rs.)</span>} rules={[{ required: true, message: "Required" }]}>
-                <InputNumber className="w-full h-11 rounded-xl flex items-center" min={1} size="large" />
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item name="amount" label="Amount (LKR)" rules={[{ required: true, message: "Required" }]}>
+                    <InputNumber className="w-full" min={1} size="large" placeholder="0.00" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item name="category" label="Category" rules={[{ required: true, message: "Required" }]}>
+                <Select placeholder="Select Category" size="large">
+                  {categories.map((cat) => (
+                    <Select.Option key={cat.id} value={cat.label}>
+                      {cat.label}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
 
-              <Form.Item name="note" label={<span className={labelClass}>Note / Purpose</span>} rules={[{ required: true, message: "Required" }]}>
-                <Input.TextArea rows={3} className="rounded-xl border-gray-200 focus:border-green-500" placeholder="Purpose of expense" size="large" />
+              <Form.Item name="note" label="Note / Description" rules={[{ required: true, message: "Required" }]}>
+                <Input.TextArea rows={3} placeholder="Enter details..." size="large" />
               </Form.Item>
 
-              <Form.Item label={<span className={labelClass}>Attachment</span>}>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item name="paymentMethod" label="Payment Method" rules={[{ required: true }]}>
+                    <Select size="large">
+                      <Select.Option value="cash">CASH</Select.Option>
+                      <Select.Option value="card">CARD / ONLINE</Select.Option>
+                      <Select.Option value="transfer">BANK TRANSFER</Select.Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item label="Attachment (Optional)">
                 <Upload
                   beforeUpload={() => false}
                   fileList={fileList}
@@ -260,7 +261,7 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
                   maxCount={1}
                 >
                   <Button icon={<IconFileUpload size={18} />} className="w-full h-11 rounded-xl border-dashed border-gray-300 hover:border-green-500 hover:text-green-600 transition-all">
-                    Select Receipt
+                    Select Receipt / File
                   </Button>
                 </Upload>
               </Form.Item>
