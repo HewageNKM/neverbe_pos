@@ -199,9 +199,9 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item name="date" label="Date" rules={[{ required: true, message: "Required" }]}>
-                    <DatePicker 
-                      className="w-full" 
-                      size="large" 
+                    <DatePicker
+                      className="w-full"
+                      size="large"
                       format="YYYY-MM-DD"
                       disabledDate={(current) => {
                         return current && (current.month() !== dayjs().month() || current.year() !== dayjs().year());
@@ -222,7 +222,7 @@ export default function POSPettyCashDialog({ open, onClose }: POSPettyCashDialog
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item name="amount" label="Amount (LKR)" rules={[{ required: true, message: "Required" }]}>
-                    <InputNumber className="w-full" min={1} size="large" placeholder="0.00" />
+                    <InputNumber className="w-full" style={{ width: '100%' }} min={1} size="large" placeholder="0.00" />
                   </Form.Item>
                 </Col>
               </Row>
