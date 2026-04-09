@@ -32,6 +32,7 @@ export default function POSInvoiceDialog({
   const [eBillPhone, setEBillPhone] = useState("");
   const [eBillSending, setEBillSending] = useState(false);
   const [eBillSent, setEBillSent] = useState(false);
+  const [receiptMode, setReceiptMode] = useState<"choice" | "physical" | "ebill">("choice");
 
   useEffect(() => {
     return () => {
@@ -74,27 +75,39 @@ export default function POSInvoiceDialog({
     setInvoices([]);
     setSearched(false);
     setInvoiceUrl(null);
+    setSelectedOrder(null);
+    setReceiptMode("choice");
     onClose();
   };
 
   const handleViewInvoice = async (order: Order) => {
     try {
       if (!order || !order.items) {
-        alert("Invalid order data for viewing.");
+        toast.error("Invalid order data");
         return;
       }
 
       setSelectedOrder(order);
       setEBillPhone("");
       setEBillSent(false);
+      setReceiptMode("choice");
+      setInvoiceUrl(null);
+    } catch (err) {
+      console.error("Failed to select invoice", err);
+    }
+  };
 
-      setLoading(true);
-      const blob = await pdf(<POSInvoicePDF order={order} />).toBlob();
+  const generatePhysicalBill = async () => {
+    if (!selectedOrder) return;
+    setLoading(true);
+    try {
+      const blob = await pdf(<POSInvoicePDF order={selectedOrder} />).toBlob();
       const url = URL.createObjectURL(blob);
       setInvoiceUrl(url);
+      setReceiptMode("physical");
     } catch (err) {
-      console.error("Failed to generate invoice", err);
-      alert("Failed to generate invoice. See console for details.");
+      console.error("Failed to generate PDF", err);
+      toast.error("Failed to generate invoice PDF");
     } finally {
       setLoading(false);
     }
@@ -186,28 +199,93 @@ export default function POSInvoiceDialog({
     },
   ];
 
+  const footerButtons = [];
+  if (selectedOrder) {
+    if (receiptMode !== "choice") {
+      footerButtons.push(
+        <Button
+          key="back-choice"
+          onClick={() => {
+            setReceiptMode("choice");
+            setInvoiceUrl(null);
+          }}
+          className="h-10 px-6 rounded-xl font-medium"
+        >
+          Change Method
+        </Button>
+      );
+    }
+    
+    if (receiptMode === "physical" && invoiceUrl) {
+      footerButtons.push(
+        <Button
+          key="print"
+          type="primary"
+          onClick={handlePrint}
+          icon={<IconPrinter size={18} />}
+          className="h-10 px-6 rounded-xl font-medium shadow-sm"
+          style={{ backgroundColor: "#16a34a" }}
+        >
+          Print
+        </Button>
+      );
+    }
+
+    footerButtons.push(
+      <Button
+        key="close-order"
+        onClick={() => {
+          setSelectedOrder(null);
+          setInvoiceUrl(null);
+          setReceiptMode("choice");
+        }}
+        className="h-10 px-6 rounded-xl font-medium"
+      >
+        Back to Search
+      </Button>
+    );
+  } else {
+    footerButtons.push(
+      <Button
+        key="close-modal"
+        onClick={handleClose}
+        className="h-10 px-6 rounded-xl font-medium"
+      >
+        Close
+      </Button>
+    );
+  }
+
   return (
     <Modal
       open={open}
       onCancel={handleClose}
-      width={800}
-      footer={null}
+      width={selectedOrder ? 800 : 700}
+      footer={
+        <div className="flex justify-end gap-3 p-4 border-t border-gray-100 bg-gray-50/30">
+          {footerButtons}
+        </div>
+      }
       closeIcon={null}
-      className="[&_.ant-modal-content]:!rounded-2xl [&_.ant-modal-content]:!border-0 [&_.ant-modal-content]:!shadow-xl [&_.ant-modal-content]:!p-0 [&_.ant-modal-content]:!min-h-[600px]"
+      styles={{ body: { padding: 0 } }}
+      className="[&_.ant-modal-content]:!rounded-2xl [&_.ant-modal-content]:!border-0 [&_.ant-modal-content]:!shadow-xl [&_.ant-modal-content]:!p-0 overflow-hidden"
     >
       {/* Header */}
       <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
         <div className="flex items-center gap-2">
-          {invoiceUrl && (
+          {selectedOrder && receiptMode !== "choice" && (
             <button
-              onClick={handleBack}
+              onClick={() => {
+                setReceiptMode("choice");
+                setInvoiceUrl(null);
+              }}
               className="text-gray-500 hover:text-gray-700 mr-1 transition-all"
             >
               <IconArrowLeft size={20} />
             </button>
           )}
           <h2 className="text-xl font-bold text-gray-800">
-            {invoiceUrl ? "Invoice Preview" : "Search Invoices"}
+            {selectedOrder ? "Receipt Method" : "Search Invoices"}
           </h2>
         </div>
         <button
@@ -220,45 +298,97 @@ export default function POSInvoiceDialog({
 
       {/* Content */}
       <div className="p-0">
-        {invoiceUrl ? (
-          <div className="flex flex-col">
-            <div className="h-[500px] w-full bg-gray-100 flex flex-col items-center justify-center border-b border-gray-200">
-              <iframe
-                src={invoiceUrl}
-                width="100%"
-                height="100%"
-                style={{ border: "none", flex: 1 }}
-                title="Invoice Preview"
-              />
+        {selectedOrder ? (
+          <div className="flex flex-col items-center p-6 bg-white min-h-[450px]">
+            <div className="text-center w-full bg-blue-50/80 border border-blue-200 rounded-2xl p-6 mb-6">
+              <h3 className="text-blue-700 font-extrabold text-2xl mb-1">
+                Found Invoice #{selectedOrder.orderId}
+              </h3>
+              <p className="text-blue-600 font-medium">
+                How would you like to provide the receipt to the customer?
+              </p>
             </div>
-            {/* eBill Resend Bar */}
-            <div className="w-full flex justify-between items-center p-4 bg-white">
-              <div className="flex flex-col">
-                <p className="font-bold text-gray-800">Send an electronic receipt</p>
-                <p className="text-sm text-gray-500">Provide an SMS number for order tracking</p>
+
+            {receiptMode === "choice" && (
+              <div className="flex flex-col sm:flex-row gap-6 w-full justify-center px-4 py-8 max-w-2xl">
+                <button
+                  onClick={generatePhysicalBill}
+                  className="group flex flex-col items-center justify-center p-8 rounded-3xl border-2 border-gray-100 bg-white hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 w-full sm:w-64 gap-4"
+                >
+                  <div className="w-20 h-20 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                    <IconPrinter size={40} className="group-hover:scale-110 transition-transform duration-300" />
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="font-black text-lg text-gray-800 tracking-tight">PRINT PHYSICAL</span>
+                    <span className="text-xs font-bold text-gray-400 mt-1">Thermal Receipt Printer</span>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setReceiptMode("ebill")}
+                  className="group flex flex-col items-center justify-center p-8 rounded-3xl border-2 border-gray-100 bg-white hover:border-green-500 hover:shadow-xl hover:shadow-green-500/10 hover:-translate-y-1 transition-all duration-300 w-full sm:w-64 gap-4"
+                >
+                  <div className="w-20 h-20 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-all duration-300">
+                    <IconSend size={40} className="group-hover:scale-110 transition-transform duration-300" />
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="font-black text-lg text-gray-800 tracking-tight">SEND eBILL SMS</span>
+                    <span className="text-xs font-bold text-gray-400 mt-1">Instant Digital Receipt</span>
+                  </div>
+                </button>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Phone (e.g. 077...)"
-                  value={eBillPhone}
-                  onChange={(e) => setEBillPhone(e.target.value)}
-                  disabled={eBillSent}
-                  className="rounded-xl h-[40px] font-bold"
-                  style={{ width: "160px" }}
+            )}
+
+            {receiptMode === "physical" && invoiceUrl && (
+              <div className="w-full h-[400px] border border-gray-200 bg-gray-50 flex items-center justify-center relative rounded-xl overflow-hidden">
+                <iframe
+                  src={invoiceUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: "none" }}
+                  title="Invoice Preview"
                 />
+              </div>
+            )}
+
+            {receiptMode === "ebill" && (
+              <div className="w-full flex flex-col gap-6 items-center max-w-sm mt-8 border-2 border-green-100 p-8 rounded-3xl bg-white shadow-sm">
+                <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center text-green-500 mb-2">
+                  <IconSend size={32} />
+                </div>
+                <div className="w-full">
+                  <p className="text-xs font-bold text-gray-500 tracking-wide uppercase mb-2">
+                    Customer Phone Number
+                  </p>
+                  <Input
+                    placeholder="e.g. 077..."
+                    value={eBillPhone}
+                    onChange={(e) => setEBillPhone(e.target.value)}
+                    disabled={eBillSent}
+                    className="rounded-xl h-[48px] font-bold text-lg text-center"
+                  />
+                </div>
                 <Button
                   type="primary"
                   icon={eBillSent ? undefined : <IconSend size={18} />}
                   onClick={handleSendEBill}
                   loading={eBillSending}
                   disabled={eBillSent || !eBillPhone.trim()}
-                  className="rounded-xl h-[40px] shadow-sm font-bold bg-green-600 border-none hover:bg-green-500 disabled:bg-green-500 disabled:opacity-50"
-                  style={{ backgroundColor: eBillSent ? "#16a34a" : "#16a34a" }}
+                  className="rounded-xl h-[48px] w-full shadow-sm font-black tracking-widest text-base bg-green-600 border-none hover:bg-green-500 disabled:bg-green-500"
                 >
-                  {eBillSent ? "SENT" : "SEND SMS"}
+                  {eBillSent ? "SMS SENT!" : "SEND RECIEPT"}
                 </Button>
+                {eBillSent && (
+                   <Button 
+                    type="link" 
+                    onClick={() => {setEBillSent(false); setEBillPhone("");}}
+                    className="text-gray-400 text-xs"
+                   >
+                     Send to another number
+                   </Button>
+                )}
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-4 p-4">
@@ -307,36 +437,6 @@ export default function POSInvoiceDialog({
               />
             ) : null}
           </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex justify-end gap-3 p-5 border-t border-gray-100 bg-gray-50/30 rounded-b-2xl">
-        {invoiceUrl ? (
-          <>
-            <Button
-              onClick={handleBack}
-              className="h-10 px-6 rounded-xl font-medium"
-            >
-              Back
-            </Button>
-            <Button
-              type="primary"
-              onClick={handlePrint}
-              icon={<IconPrinter size={18} />}
-              className="h-10 px-6 rounded-xl font-medium shadow-sm"
-              style={{ backgroundColor: "#16a34a" }}
-            >
-              Print
-            </Button>
-          </>
-        ) : (
-          <Button
-            onClick={handleClose}
-            className="h-10 px-6 rounded-xl font-medium"
-          >
-            Close
-          </Button>
         )}
       </div>
     </Modal>

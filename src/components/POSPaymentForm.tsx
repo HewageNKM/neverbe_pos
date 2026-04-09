@@ -373,26 +373,32 @@ export default function POSPaymentForm() {
             </div>
 
             {receiptMode === "choice" && (
-              <div className="flex flex-col sm:flex-row gap-6 w-full justify-center px-4 py-8">
-                <Button
+              <div className="flex flex-col sm:flex-row gap-6 w-full justify-center px-4 py-8 max-w-2xl">
+                <button
                   onClick={generatePhysicalBill}
-                  className="flex flex-col items-center justify-center p-8 h-auto rounded-3xl border-2 border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all w-full md:w-64 gap-4"
+                  className="group flex flex-col items-center justify-center p-8 rounded-3xl border-2 border-gray-100 bg-white hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 w-full sm:w-64 gap-4"
                 >
-                  <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                    <IconPrinter size={32} />
+                  <div className="w-20 h-20 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                    <IconPrinter size={40} className="group-hover:scale-110 transition-transform duration-300" />
                   </div>
-                  <span className="font-extrabold text-lg text-gray-800">PRINT PHYSICAL</span>
-                </Button>
+                  <div className="flex flex-col items-center">
+                    <span className="font-black text-lg text-gray-800 tracking-tight">PRINT PHYSICAL</span>
+                    <span className="text-xs font-bold text-gray-400 mt-1">Thermal Receipt Printer</span>
+                  </div>
+                </button>
                 
-                <Button
+                <button
                   onClick={() => setReceiptMode("ebill")}
-                  className="flex flex-col items-center justify-center p-8 h-auto rounded-3xl border-2 border-gray-200 hover:border-green-500 hover:shadow-lg transition-all w-full md:w-64 gap-4"
+                  className="group flex flex-col items-center justify-center p-8 rounded-3xl border-2 border-gray-100 bg-white hover:border-green-500 hover:shadow-xl hover:shadow-green-500/10 hover:-translate-y-1 transition-all duration-300 w-full sm:w-64 gap-4"
                 >
-                  <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                    <IconSend size={32} />
+                  <div className="w-20 h-20 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-all duration-300">
+                    <IconSend size={40} className="group-hover:scale-110 transition-transform duration-300" />
                   </div>
-                  <span className="font-extrabold text-lg text-gray-800">SEND eBILL SMS</span>
-                </Button>
+                  <div className="flex flex-col items-center">
+                    <span className="font-black text-lg text-gray-800 tracking-tight">SEND eBILL SMS</span>
+                    <span className="text-xs font-bold text-gray-400 mt-1">Instant Digital Receipt</span>
+                  </div>
+                </button>
               </div>
             )}
 
