@@ -46,17 +46,15 @@ const POSInvoicePDF: React.FC<InvoicePDFProps> = ({ order }) => {
     );
   }
 
-  // Calculate totals if not present (fallback)
-  const total =
-    order.total ||
-    order.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-
-  const totalDiscount =
-    order.discount ||
-    order.items.reduce((acc, i) => acc + (i.discount || 0), 0);
-
-  const subtotal = order.items.reduce(
+  // Raw subtotal BEFORE discounts
+  const rawSubtotal = order.items.reduce(
     (acc, i) => acc + i.price * i.quantity,
+    0
+  );
+
+  // Total of per-item discounts
+  const itemDiscountTotal = order.items.reduce(
+    (acc, i) => acc + (i.discount || 0) * i.quantity,
     0
   );
 
@@ -86,7 +84,10 @@ const POSInvoicePDF: React.FC<InvoicePDFProps> = ({ order }) => {
         {/* Items List */}
         <View>
           <View style={styles.hr} />
-          {order.items.map((item: any, idx: number) => (
+          {order.items.map((item: any, idx: number) => {
+            const hasDiscount = (item.discount || 0) > 0;
+            const netPrice = item.price - (item.discount || 0);
+            return (
             <View key={idx} style={{ marginBottom: 3 }}>
               <View style={styles.tableRow}>
                 <View style={styles.left}>
@@ -101,20 +102,19 @@ const POSInvoicePDF: React.FC<InvoicePDFProps> = ({ order }) => {
                   <Text style={{ fontSize: 6, color: "#666" }}>
                     @ Rs. {Number(item.price).toFixed(2)} each
                   </Text>
+                  {hasDiscount && (
+                    <Text style={{ fontSize: 6, color: "#666" }}>
+                      Disc: -{Number(item.discount).toFixed(2)} = Rs. {netPrice.toFixed(2)} each
+                    </Text>
+                  )}
                 </View>
                 <Text style={styles.right}>
-                  {(item.price * item.quantity).toFixed(2)}
+                  {(netPrice * item.quantity).toFixed(2)}
                 </Text>
               </View>
-              {(item.discount || 0) > 0 && (
-                <Text
-                  style={{ fontSize: 6, color: "#666", textAlign: "right" }}
-                >
-                  Disc: -{Number(item.discount).toFixed(2)}
-                </Text>
-              )}
             </View>
-          ))}
+          );
+          })}
           <View style={styles.hr} />
         </View>
 
@@ -122,10 +122,12 @@ const POSInvoicePDF: React.FC<InvoicePDFProps> = ({ order }) => {
 
         {/* Totals */}
         <View style={{ textAlign: "right", marginBottom: 4 }}>
-          <Text style={{ fontSize: 7 }}>Subtotal: {subtotal.toFixed(2)}</Text>
-          <Text style={{ fontSize: 7 }}>
-            Discount: -{totalDiscount.toFixed(2)}
-          </Text>
+          <Text style={{ fontSize: 7 }}>Subtotal: {rawSubtotal.toFixed(2)}</Text>
+          {itemDiscountTotal > 0 && (
+            <Text style={{ fontSize: 7 }}>
+              Discount: -{itemDiscountTotal.toFixed(2)}
+            </Text>
+          )}
           {/* If fee exists */}
           {(order.fee || 0) > 0 && (
             <Text style={{ fontSize: 7 }}>Fee: {order.fee.toFixed(2)}</Text>
