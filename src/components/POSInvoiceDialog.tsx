@@ -6,7 +6,9 @@ import {
   IconEye,
   IconPrinter,
   IconArrowLeft,
+  IconSend,
 } from "@tabler/icons-react";
+import toast from "react-hot-toast";
 import api from "@/lib/api";
 import { pdf } from "@react-pdf/renderer";
 import POSInvoicePDF from "./POSInvoicePDF";
@@ -26,6 +28,10 @@ export default function POSInvoiceDialog({
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [eBillPhone, setEBillPhone] = useState("");
+  const [eBillSending, setEBillSending] = useState(false);
+  const [eBillSent, setEBillSent] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -78,6 +84,10 @@ export default function POSInvoiceDialog({
         return;
       }
 
+      setSelectedOrder(order);
+      setEBillPhone("");
+      setEBillSent(false);
+
       setLoading(true);
       const blob = await pdf(<POSInvoicePDF order={order} />).toBlob();
       const url = URL.createObjectURL(blob);
@@ -103,6 +113,27 @@ export default function POSInvoiceDialog({
 
   const handleBack = () => {
     setInvoiceUrl(null);
+    setSelectedOrder(null);
+  };
+
+  const handleSendEBill = async () => {
+    if (!eBillPhone.trim() || eBillPhone.length < 9) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+    setEBillSending(true);
+    try {
+      await api.post("/api/v1/pos/ebill", {
+        orderId: selectedOrder?.orderId,
+        phone: eBillPhone.trim(),
+      });
+      toast.success("eBill sent successfully!");
+      setEBillSent(true);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to send eBill");
+    } finally {
+      setEBillSending(false);
+    }
   };
 
   const columns = [
@@ -190,14 +221,44 @@ export default function POSInvoiceDialog({
       {/* Content */}
       <div className="p-0">
         {invoiceUrl ? (
-          <div className="h-[500px] w-full bg-gray-100 flex flex-col">
-            <iframe
-              src={invoiceUrl}
-              width="100%"
-              height="100%"
-              style={{ border: "none", flex: 1 }}
-              title="Invoice Preview"
-            />
+          <div className="flex flex-col">
+            <div className="h-[500px] w-full bg-gray-100 flex flex-col items-center justify-center border-b border-gray-200">
+              <iframe
+                src={invoiceUrl}
+                width="100%"
+                height="100%"
+                style={{ border: "none", flex: 1 }}
+                title="Invoice Preview"
+              />
+            </div>
+            {/* eBill Resend Bar */}
+            <div className="w-full flex justify-between items-center p-4 bg-white">
+              <div className="flex flex-col">
+                <p className="font-bold text-gray-800">Send an electronic receipt</p>
+                <p className="text-sm text-gray-500">Provide an SMS number for order tracking</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Phone (e.g. 077...)"
+                  value={eBillPhone}
+                  onChange={(e) => setEBillPhone(e.target.value)}
+                  disabled={eBillSent}
+                  className="rounded-xl h-[40px] font-bold"
+                  style={{ width: "160px" }}
+                />
+                <Button
+                  type="primary"
+                  icon={eBillSent ? undefined : <IconSend size={18} />}
+                  onClick={handleSendEBill}
+                  loading={eBillSending}
+                  disabled={eBillSent || !eBillPhone.trim()}
+                  className="rounded-xl h-[40px] shadow-sm font-bold bg-green-600 border-none hover:bg-green-500 disabled:bg-green-500 disabled:opacity-50"
+                  style={{ backgroundColor: eBillSent ? "#16a34a" : "#16a34a" }}
+                >
+                  {eBillSent ? "SENT" : "SEND SMS"}
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-4 p-4">
