@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Modal, Button, Select, Input, InputNumber, Table, Spin } from "antd";
-import { IconX, IconPlus, IconTrash, IconPrinter } from "@tabler/icons-react";
+import { IconX, IconPlus, IconTrash, IconPrinter, IconSend } from "@tabler/icons-react";
 import { usePOS } from "../context/POSContext";
 import { POSPayment, POSPaymentMethod } from "@/model/POSTypes";
 import toast from "react-hot-toast";
@@ -30,6 +30,9 @@ export default function POSPaymentForm() {
   const [paymentMethods, setPaymentMethods] = useState<POSPaymentMethod[]>([]);
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+  const [eBillPhone, setEBillPhone] = useState("");
+  const [eBillSending, setEBillSending] = useState(false);
+  const [eBillSent, setEBillSent] = useState(false);
 
   const itemsTotal = useMemo(
     () => items.reduce((acc, i) => acc + i.quantity * i.price, 0),
@@ -261,7 +264,29 @@ export default function POSPaymentForm() {
     setCardNumber("");
     setInvoiceUrl(null);
     setCompletedOrder(null);
+    setEBillPhone("");
+    setEBillSent(false);
     closePaymentDialog();
+  };
+
+  const handleSendEBill = async () => {
+    if (!eBillPhone.trim() || eBillPhone.length < 9) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+    setEBillSending(true);
+    try {
+      await api.post("/api/v1/pos/ebill", {
+        orderId: completedOrder?.orderId,
+        phone: eBillPhone.trim(),
+      });
+      toast.success("eBill sent successfully!");
+      setEBillSent(true);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to send eBill");
+    } finally {
+      setEBillSending(false);
+    }
   };
 
   const paymentColumns = [
@@ -327,7 +352,8 @@ export default function POSPaymentForm() {
           </div>
         ) : invoiceUrl ? (
           <div className="flex flex-col gap-4 items-center">
-            <div className="w-full h-[500px] border border-gray-200 bg-gray-50">
+            <div className="w-full h-[500px] border border-gray-200 bg-gray-50 flex items-center justify-center relative">
+              {/* Optional Physical Print Preview */}
               <iframe
                 src={invoiceUrl}
                 width="100%"
@@ -336,9 +362,35 @@ export default function POSPaymentForm() {
                 title="Invoice Preview"
               />
             </div>
-            <p className="text-green-600 font-bold">
-              Order Completed Successfully!
-            </p>
+            
+            <div className="w-full flex flex-col md:flex-row gap-4 items-center justify-between p-4 bg-green-50 border border-green-200 rounded-2xl">
+              <div className="flex flex-col">
+                <p className="text-green-700 font-bold text-lg">
+                  Order Completed Successfully!
+                </p>
+                <p className="text-sm text-green-600">Send an electronic receipt to the customer.</p>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Phone (e.g. 077...)"
+                  value={eBillPhone}
+                  onChange={(e) => setEBillPhone(e.target.value)}
+                  disabled={eBillSent}
+                  className="rounded-xl h-[40px] font-bold"
+                  style={{ width: "180px" }}
+                />
+                <Button
+                  type="primary"
+                  icon={eBillSent ? undefined : <IconSend size={18} />}
+                  onClick={handleSendEBill}
+                  loading={eBillSending}
+                  disabled={eBillSent}
+                  className="rounded-xl h-[40px] shadow-sm font-bold bg-green-600"
+                >
+                  {eBillSent ? "SENT" : "SEND SMS"}
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
