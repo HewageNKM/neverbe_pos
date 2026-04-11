@@ -89,7 +89,8 @@ export default function POSExchangeDialog({
       .get("/api/v1/pos/payment-methods")
       .then(({ data }) => {
         if (Array.isArray(data)) {
-          setPaymentMethods(data.filter((m: any) => m.isActive));
+          // Backend uses 'status' (boolean), frontend was inconsistently looking for 'isActive'
+          setPaymentMethods(data.filter((m: any) => m.status));
         }
       })
       .catch((err) => console.error("Failed to load payment methods", err));
@@ -307,14 +308,23 @@ export default function POSExchangeDialog({
       title: "Item",
       dataIndex: "name",
       key: "name",
-      render: (name: string, record: any) => (
-        <div>
-          <p className="font-semibold">{name}</p>
-          <p className="text-xs text-gray-500">
-            Rs. {record.price?.toLocaleString()}
-          </p>
-        </div>
-      ),
+      render: (name: string, record: any) => {
+        const unitDiscount = (record.discount || 0) / (record.quantity || 1);
+        const soldPrice = (record.price || 0) - unitDiscount;
+        return (
+          <div>
+            <p className="font-semibold">{name}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-400 line-through">
+                Rs. {record.price?.toLocaleString()}
+              </span>
+              <span className="text-xs font-bold text-green-700">
+                Rs. {soldPrice.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        );
+      },
     },
     { title: "Size", dataIndex: "size", key: "size" },
     {
@@ -367,19 +377,23 @@ export default function POSExchangeDialog({
       title: "Item",
       dataIndex: "name",
       key: "name",
-      render: (name: string, record: ExchangeItem) => (
-        <div>
-          <p className="font-semibold">{name}</p>
-          <p className="text-xs text-gray-500">
-            Rs. {record.price?.toLocaleString()}
-            {record.discount && record.discount > 0 && (
-              <span className="text-green-600 ml-1">
-                (-Rs. {(record.discount / record.quantity).toLocaleString()})
+      render: (name: string, record: ExchangeItem) => {
+        const unitDiscount = (record.discount || 0) / (record.quantity || 1);
+        const soldPrice = (record.price || 0) - unitDiscount;
+        return (
+          <div>
+            <p className="font-semibold">{name}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-400 line-through">
+                Rs. {record.price?.toLocaleString()}
               </span>
-            )}
-          </p>
-        </div>
-      ),
+              <span className="text-xs font-bold text-green-700">
+                Rs. {soldPrice.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        );
+      },
     },
     { title: "Size", dataIndex: "size", key: "size" },
     { title: "Qty", dataIndex: "quantity", key: "quantity" },
@@ -645,7 +659,7 @@ export default function POSExchangeDialog({
                 <div className="flex gap-2 flex-wrap">
                   {paymentMethods.map((pm) => (
                     <button
-                      key={pm.id}
+                      key={pm.paymentId}
                       onClick={() => setPaymentMethod(pm.name)}
                       className={`px-3 py-1 border-2 font-bold text-sm ${
                         paymentMethod === pm.name
